@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pollo Juanita - Sistema de Pedidos</title>
+    <style>
+        :root {
+            --primary: #e63946; /* Rojo pollo */
+            --secondary: #f1faee;
+            --accent: #f4a261; /* Naranja */
+            --dark: #1d3557;
+            --success: #2a9d8f;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; }
+        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-top: 0; }
+
+        /* Layout Principal */
+        .container {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+
+        /* Sección Izquierda: Menú */
+        .menu-section {
+            flex: 2;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #ddd;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .product-btn {
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+        }
+
+        .product-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(230, 57, 70, 0.3);
+            background-color: #fff5f5;
+        }
+
+        .product-btn:active {
+            transform: scale(0.95);
+        }
+
+        .p-name { font-weight: bold; margin-bottom: 5px; font-size: 0.95rem; }
+        .p-price { color: var(--primary); font-weight: bold; font-size: 1.1rem; }
+
+        /* Sección Derecha: Pedido Actual */
+        .order-section {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        .order-items {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+
+        .order-item:last-child { border-bottom: none; }
+
+        .item-info span { display: block; }
+        .item-qty { font-size: 0.8rem; color: #666; background: #eee; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        .item-total { font-weight: bold; color: var(--dark); }
+
+        .btn-remove {
+            color: red;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            margin-left: 10px;
+        }
+
+        .totals {
+            text-align: right;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .total-price {
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover { opacity: 0.9; }
+
+        .btn-confirm { background-color: var(--success); }
+        .btn-clear { background-color: var(--dark); }
+        .btn-admin { background-color: var(--accent); color: #333; }
+
+        /* Tabs de navegación */
+        .tabs {
+            display: flex;
+            background: #ddd;
+            padding-top: 5px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #ccc;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        .tab.active {
+            background: white;
+            color: var(--primary);
+        }
+
+        /* Sección Admin e Historial (Ocultas por defecto) */
+        .panel { display: none; padding: 20px; height: 100%; overflow-y: auto; }
+        .panel.active { display: block; }
+
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th { background-color: var(--primary); color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+
+        /* Formularios Admin */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; }
+        .product-list-admin {
+            list-style: none;
+            padding: 0;
+        }
+        .product-list-admin li {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+        .btn-delete { background-color: #e63946; }
+        .btn-save { background-color: #2a9d8f; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { flex-direction: column; height: auto; }
+            .menu-section { height: 50vh; border-right: none; border-bottom: 2px solid #ddd; }
+            .order-section { height: auto; min-height: 40vh; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🍗 Pollo Juanita</h1>
+</header>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('pos')">Caja</div>
+    <div class="tab" onclick="switchTab('admin')">Editar Menú</div>
+    <div class="tab" onclick="switchTab('history')">Ventas del Día</div>
+</div>
+
+<div class="container">
+    <!-- VISTA CAJA (POS) -->
+    <div id="pos-view" class="panel active" style="display: flex; width: 100%; padding: 0;">
+        
+        <!-- Izquierda: Botones -->
+        <div class="menu-section">
+            <div class="menu-grid" id="menuGrid">
+                <!-- Los botones se generan con JS -->
+            </div>
+        </div>
+
+        <!-- Derecha: Ticket -->
+        <div class="order-section">
+            <h2>Pedido Actual #<span id="orderIdDisplay">1</span></h2>
+            <div class="order-items" id="orderList">
+                <!-- Items del pedido van aquí -->
+                <div style="padding:20px; text-align:center; color:#999;">El carrito está vacío</div>
+            </div>
+            
+            <div class="totals">
+                Total: <span class="total-price" id="totalDisplay">0.00 Bs</span>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-clear" onclick="clearOrder()">Cancelar</button>
+                <button class="btn btn-confirm" onclick="confirmOrder()">Cobrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA ADMIN (Editar) -->
+    <div id="admin-view" class="panel">
+        <h2>Editar Menú y Precios</h2>
+        
+        <div style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+            <h3>Agregar / Editar Producto</h3>
+            <div class="form-group">
+                <label>Nombre del Plato (Ej: Pechuga, Gaseosa)</label>
+                <input type="text" id="newProdName" placeholder="Nombre">
+            </div>
+            <div class="form-group">
+                <label>Precio (Bs)</label>
+                <input type="number" id="newProdPrice" placeholder="0.00">
+            </div>
+            <input type="hidden" id="editProdIndex"> <!-- Para saber si estamos editando uno existente -->
+            <button class="btn btn-save" onclick="saveProduct()">Guardar Producto</button>
+            <button class="btn btn-clear" onclick="resetForm()" style="margin-left: 10px;">Limpiar Campos</button>
+        </div>
+
+        <h3>Lista de Productos Actuales</h3>
+        <ul class="product-list-admin" id="adminProductList">
+            <!-- Lista generada por JS -->
+        </ul>
+        <button class="btn btn-delete" onclick="resetDefaultMenu()" style="margin-top: 20px;">Restaurar Menú por Defecto</button>
+    </div>
+
+    <!-- VISTA HISTORIAL (Ventas) -->
+    <div id="history-view" class="panel">
+        <h2>Inventario de Pedidos (Ventas)</h2>
+        <div style="margin-bottom: 15px;">
+            <strong>Ventas Totales del Día:</strong> <span id="totalDaySales">0.00 Bs</span>
+            <button class="btn btn-delete btn-small" onclick="clearHistory()" style="float: right;">Borrar Historial</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th># Orden</th>
+                    <th>Hora</th>
+                    <th>Detalle</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="salesTableBody">
+                <!-- Filas generadas por JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // --- ESTADO INICIAL Y DATOS ---
+    
+    // Menú por defecto si es la primera vez que entras
+    const defaultMenu = [
+        { name: "Pollo Entero", price: 25 },
+        { name: "Medio Pollo", price: 14 },
+        { name: "Cuarto de Pollo", price: 8 },
+        { name: "Papas Fritas", price: 5 },
+        { name: "Ensalada", price: 3 },
+        { name: "Gaseosa 500ml", price: 4 },
+        { name: "Gaseosa 1L", price: 7 },
+        { name: "Agua", price: 2 }
+    ];
+
+    let menuItems = JSON.parse(localStorage.getItem('polloJuanitaMenu')) || defaultMenu;
+    let orderHistory = JSON.parse(localStorage.getItem('polloJuanitaHistory')) || [];
+    let orderCounter = parseInt(localStorage.getItem('polloJuanitaCounter')) || 1;
+    
+    let currentOrder = [];
+
+    // --- FUNCIONES DE INTERFAZ ---
+
+    function init() {
+        renderMenu();
+        updateOrderDisplay();
+        renderAdminList();
+        renderHistory();
+    }
+
+    // Cambiar entre pestañas (Caja, Admin, Historial)
+    function switchTab(tabName) {
+        // Ocultar todos los paneles
+        document.querySelectorAll('.panel').forEach(p => {
+            p.classList.remove('active');
+            p.style.display = 'none';
+        });
+        // Quitar clase active de los tabs
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+        // Activar el seleccionado
+        if(tabName === 'pos') {
+            document.getElementById('pos-view').style.display = 'flex'; // Flex para el layout de columnas
+            document.getElementById('pos-view').classList.add('active');
+            document.querySelectorAll('.tab')[0].classList.add('active');
+        } else if (tabName === 'admin') {
+            document.getElementById('admin-view').style.display = 'block';
+            document.getElementById('admin-view').classList.add('active');
+            document.querySelectorAll('.tab')[1].classList.add('active');
+        } else if (tabName === 'history') {
+            document.getElementById('history-view').style.display = 'block';
+            document.getElementById('history-view').classList.add('active');
+            document.querySelectorAll('.tab')[2].classList.add('active');
+        }
+    }
+
+    // --- LÓGICA DE CAJA (POS) ---
+
+    function renderMenu() {
+        const grid = document.getElementById('menuGrid');
+        grid.innerHTML = '';
+        menuItems.forEach((item, index) => {
+            const btn = document.createElement('div');
+            btn.className = 'product-btn';
+            btn.onclick = () => addToOrder(index);
+            btn.innerHTML = `
+                <span class="p-name">${item.name}</span>
+                <span class="p-price">${item.price} Bs</span>
+            `;
+            grid.appendChild(btn);
+        });
+    }
+
+    function addToOrder(menuIndex) {
+        const item = menuItems[menuIndex];
+        // Verificar si ya existe en el pedido actual para sumar cantidad
+        const existingItem = currentOrder.find(i => i.name === item.name);
+        
+        if (existingItem) {
+            existingItem.qty++;
+            existingItem.total = existingItem.qty * item.price;
+        } else {
+            currentOrder.push({
+                name: item.name,
+                price: item.price,
+                qty: 1,
+                total: item.price
+            });
+        }
+        updateOrderDisplay();
+    }
+
+    function removeFromOrder(orderIndex) {
+        currentOrder.splice(orderIndex, 1);
+        updateOrderDisplay();
+    }
+
+    function updateOrderDisplay() {
+        const list = document.getElementById('orderList');
+        const totalDisplay = document.getElementById('totalDisplay');
+        const orderNumDisplay = document.getElementById('orderIdDisplay');
+
+        orderNumDisplay.textContent = orderCounter;
+        list.innerHTML = '';
+
+        let total = 0;
+
+        if (currentOrder.length === 0) {
+            list.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">El carrito está vacío</div>';
+        } else {
+            currentOrder.forEach((item, index) => {
+                total += item.total;
+                const div = document.createElement('div');
+                div.className = 'order-item';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <span><span class="item-qty">${item.qty}x</span> ${item.name}</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span class="item-total">${item.total} Bs</span>
+                        <button class="btn-remove" onclick="removeFromOrder(${index})">&times;</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        totalDisplay.textContent = total.toFixed(2) + ' Bs';
+    }
+
+    function clearOrder() {
+        if(confirm('¿Borrar pedido actual?')) {
+            currentOrder = [];
+            updateOrderDisplay();
+        }
+    }
+
+    function confirmOrder() {
+        if (currentOrder.length === 0) {
+            alert('El pedido está vacío.');
+            return;
+        }
+
+        // Calcular total
+        const total = currentOrder.reduce((sum, item) => sum + item.total, 0);
+
+        // Crear objeto de venta
+        const sale = {
+            id: orderCounter,
+            date: new Date().toLocaleString(),
+            items: [...currentOrder], // Copia del array
+            total: total
+        };
+
+        // Guardar en historial
+        orderHistory.push(sale);
+        localStorage.setItem('polloJuanitaHistory', JSON.stringify(orderHistory));
+
+        // Incrementar contador y guardar
+        orderCounter++;
+        localStorage.setItem('polloJuanitaCounter', orderCounter);
+
+        // Limpiar vista
+        currentOrder = [];
+        updateOrderDisplay();
+        renderHistory();
+        
+        alert(`¡Pedido #${sale.id} cobrado con éxito! Total: ${total} Bs`);
+    }
+
+    // --- LÓGICA DE ADMINISTRACIÓN ---
+
+    function renderAdminList() {
+        const list = document.getElementById('adminProductList');
+        list.innerHTML = '';
+        menuItems.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span><b>${item.name}</b> - ${item.price} Bs</span>
+                <div>
+                    <button class="btn btn-small btn-save" onclick="editProduct(${index})">Editar</button>
+                    <button class="btn btn-small btn-delete" onclick="deleteProduct(${index})">Borrar</button>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    function saveProduct() {
+        const nameInput = document.getElementById('newProdName');
+        const priceInput = document.getElementById('newProdPrice');
+        const indexInput = document.getElementById('editProdIndex');
+
+        const name = nameInput.value.trim();
+        const price = parseFloat(priceInput.value);
+
+        if (!name || isNaN(price)) {
+            alert('Por favor ingrese un nombre y un precio válido.');
+            return;
+        }
+
+        if (indexInput.value === "") {
+            // Crear nuevo
+            menuItems.push({ name, price });
+        } else {
+            // Editar existente
+            const index = parseInt(indexInput.value);
+            menuItems[index] = { name, price };
+        }
+
+        // Guardar cambios
+        localStorage.setItem('polloJuanitaMenu', JSON.stringify(menuItems));
+        
+        // Actualizar vistas
+        renderMenu();
+        renderAdminList();
+        resetForm();
+    }
+
+    function editProduct(index) {
+        const item = menuItems[index];
+        document.getElementById('newProdName').value = item.name;
+        document.getElementById('newProdPrice').value = item.price;
+        document.getElementById('editProdIndex').value = index;
+    }
+
+    function deleteProduct(index) {
+        if(confirm('¿Estás seguro de borrar este producto?')) {
+            menuItems.splice(index, 1);
+            localStorage.setItem('polloJuanitaMenu', JSON.stringify(menuItems));
+            renderMenu();
+            renderAdminList();
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('newProdName').value = '';
+        document.getElementById('newProdPrice').value = '';
+        document.getElementById('editProdIndex').value = '';
+    }
+
+    function resetDefaultMenu() {
+        if(confirm('¿Restaurar menú original? Se perderán tus cambios.')) {
+            menuItems = [...defaultMenu]; // Copia del default
+            localStorage.setItem('polloJuanitaMenu', JSON.stringify(menuItems));
+            renderMenu();
+            renderAdminList();
+        }
+    }
+
+    // --- LÓGICA DE HISTORIAL (INVENTARIO) ---
+
+    function renderHistory() {
+        const tbody = document.getElementById('salesTableBody');
+        const totalSalesDisplay = document.getElementById('totalDaySales');
+        tbody.innerHTML = '';
+
+        let totalDay = 0;
+
+        // Mostrar las últimas ventas primero
+        [...orderHistory].reverse().forEach(sale => {
+            totalDay += sale.total;
+            
+            // Crear detalle de items
+            const itemsDetail = sale.items.map(i => `${i.qty}x ${i.name}`).join(', ');
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>#${sale.id}</td>
+                <td>${sale.date}</td>
+                <td>${itemsDetail}</td>
+                <td>${sale.total.toFixed(2)} Bs</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        totalSalesDisplay.textContent = totalDay.toFixed(2) + ' Bs';
+    }
+
+    function clearHistory() {
+        if(confirm('¿Borrar TODO el historial de ventas? Esto no se puede deshacer.')) {
+            orderHistory = [];
+            localStorage.setItem('polloJuanitaHistory', JSON.stringify(orderHistory));
+            renderHistory();
+        }
+    }
+
+    // Iniciar la app
+    init();
+
+</script>
+
+</body>
+</html>
