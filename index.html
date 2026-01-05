@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pollo Juanita - Acceso</title>
+    <style>
+        :root {
+            --primary: #e63946; /* Rojo pollo */
+            --secondary: #f1faee;
+            --accent: #f4a261; /* Naranja */
+            --dark: #1d3557;
+            --success: #2a9d8f;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            height: 100vh;
+            overflow: hidden; /* Evitar scroll en el login */
+        }
+
+        /* --- ESTILOS DE LOGIN --- */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary);
+            background-image: linear-gradient(135deg, #e63946 0%, #a31621 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .login-box p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-login:hover {
+            background-color: #d62828;
+        }
+
+        .error-msg {
+            color: red;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* --- ESTILOS DE LA APLICACIÓN --- */
+        #app-content {
+            display: none; /* Oculto hasta hacer login */
+            height: 100vh;
+            display: flex; /* Flex para columnas */
+            flex-direction: column;
+        }
+        
+        /* Solo mostrar flex si está activo, handled by JS */
+        #app-content.hidden { display: none; }
+        #app-content.visible { display: flex; }
+
+        /* Header */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        header h1 { margin: 0; font-size: 1.5rem; }
+        .btn-logout {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid white;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.4); }
+
+        /* Layout Principal */
+        .container {
+            display: flex;
+            flex-grow: 1;
+            height: calc(100vh - 120px); /* Restando header y tabs */
+        }
+
+        /* Sección Izquierda: Menú */
+        .menu-section {
+            flex: 2;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #ddd;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .product-btn {
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 160px;
+            overflow: hidden;
+        }
+
+        .product-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(230, 57, 70, 0.3);
+            background-color: #fff5f5;
+        }
+
+        .product-btn:active {
+            transform: scale(0.95);
+        }
+
+        .product-img-container {
+            width: 100%;
+            height: 80px;
+            overflow: hidden;
+            border-radius: 5px;
+            background: #eee;
+            margin-bottom: 5px;
+        }
+
+        .product-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .p-name { font-weight: bold; margin-bottom: 2px; font-size: 0.9rem; line-height: 1.2; }
+        .p-price { color: var(--primary); font-weight: bold; font-size: 1rem; }
+
+        /* Sección Derecha: Pedido Actual */
+        .order-section {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        .order-items {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+
+        .order-item:last-child { border-bottom: none; }
+
+        .item-info span { display: block; }
+        .item-qty { font-size: 0.8rem; color: #666; background: #eee; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        .item-total { font-weight: bold; color: var(--dark); }
+
+        .btn-remove {
+            color: red;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            margin-left: 10px;
+        }
+
+        .totals {
+            text-align: right;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .total-price {
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover { opacity: 0.9; }
+
+        .btn-confirm { background-color: var(--success); }
+        .btn-clear { background-color: var(--dark); }
+        .btn-admin { background-color: var(--accent); color: #333; }
+
+        /* Tabs de navegación */
+        .tabs {
+            display: flex;
+            background: #ddd;
+            padding-top: 5px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #ccc;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        .tab.active {
+            background: white;
+            color: var(--primary);
+        }
+
+        /* Paneles */
+        .panel { display: none; padding: 20px; height: 100%; overflow-y: auto; }
+        .panel.active { display: block; }
+        
+        /* Ajuste para flex layout del POS */
+        #pos-view.panel.active { display: flex; padding: 0; }
+
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th { background-color: var(--primary); color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+
+        /* Formularios Admin */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; }
+        
+        .product-list-admin {
+            list-style: none;
+            padding: 0;
+        }
+        .product-list-admin li {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .admin-item-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .admin-thumb {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+        .btn-delete { background-color: #e63946; }
+        .btn-save { background-color: #2a9d8f; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { flex-direction: column; height: auto; }
+            .menu-section { height: 50vh; border-right: none; border-bottom: 2px solid #ddd; }
+            .order-section { height: auto; min-height: 40vh; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🍗</div>
+            <h1>Pollo Juanita</h1>
+            <p>Ingrese sus credenciales para continuar</p>
+            
+            <form onsubmit="event.preventDefault(); attemptLogin();">
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="username" placeholder="Ej: admin" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" placeholder="****" required>
+                </div>
+                <button type="submit" class="btn-login">INGRESAR</button>
+                <div id="login-error" class="error-msg">Usuario o contraseña incorrectos.</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL DE LA APP (Oculto inicialmente) -->
+    <div id="app-content" class="hidden">
+        
+        <header>
+            <h1>🍗 Pollo Juanita</h1>
+            <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('pos')">Caja</div>
+            <div class="tab" onclick="switchTab('admin')">Editar Menú</div>
+            <div class="tab" onclick="switchTab('history')">Ventas del Día</div>
+        </div>
+
+        <div class="container">
+            <!-- VISTA CAJA (POS) -->
+            <div id="pos-view" class="panel active">
+                
+                <!-- Izquierda: Botones -->
+                <div class="menu-section">
+                    <div class="menu-grid" id="menuGrid"></div>
+                </div>
+
+                <!-- Derecha: Ticket -->
+                <div class="order-section">
+                    <h2>Pedido Actual #<span id="orderIdDisplay">1</span></h2>
+                    <div class="order-items" id="orderList">
+                        <div style="padding:20px; text-align:center; color:#999;">El carrito está vacío</div>
+                    </div>
+                    
+                    <div class="totals">
+                        Total: <span class="total-price" id="totalDisplay">0.00 Bs</span>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-clear" onclick="clearOrder()">Cancelar</button>
+                        <button class="btn btn-confirm" onclick="confirmOrder()">Cobrar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA ADMIN (Editar) -->
+            <div id="admin-view" class="panel">
+                <h2>Editar Menú y Precios</h2>
+                
+                <div style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+                    <h3>Agregar / Editar Producto</h3>
+                    <div class="form-group">
+                        <label>Nombre del Plato</label>
+                        <input type="text" id="newProdName" placeholder="Ej: Pollo Asado">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio (Bs)</label>
+                        <input type="number" id="newProdPrice" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>URL de la Imagen (Enlace)</label>
+                        <input type="text" id="newProdImage" placeholder="https://ejemplo.com/foto.jpg">
+                        <small style="color: #666;">Deja vacío para usar imagen genérica.</small>
+                    </div>
+                    <input type="hidden" id="editProdIndex">
+                    <button class="btn btn-save" onclick="saveProduct()">Guardar Producto</button>
+                    <button class="btn btn-clear" onclick="resetForm()" style="margin-left: 10px;">Limpiar Campos</button>
+                </div>
+
+                <h3>Lista de Productos</h3>
+                <ul class="product-list-admin" id="adminProductList"></ul>
+                <button class="btn btn-delete" onclick="resetDefaultMenu()" style="margin-top: 20px;">Restaurar Menú por Defecto</button>
+            </div>
+
+            <!-- VISTA HISTORIAL (Ventas) -->
+            <div id="history-view" class="panel">
+                <h2>Inventario de Pedidos (Ventas)</h2>
+                <div style="margin-bottom: 15px;">
+                    <strong>Ventas Totales del Día:</strong> <span id="totalDaySales">0.00 Bs</span>
+                    <button class="btn btn-delete btn-small" onclick="clearHistory()" style="float: right;">Borrar Historial</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th># Orden</th>
+                            <th>Hora</th>
+                            <th>Detalle</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- CREDENCIALES ---
+    const USER_CORRECTO = "admin";
+    const PASS_CORRECTO = "1234";
+    const CLAVE_SEGURIDAD = "1234"; // Para borrar pedidos/historial dentro de la app
+
+    // --- ESTADO INICIAL ---
+    
+    const defaultMenu = [
+        { name: "Pollo Entero", price: 25, image: "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=300&h=200&fit=crop" },
+        { name: "Medio Pollo", price: 14, image: "https://images.unsplash.com/photo-1608039829572-f4e8f2c6f8e6?w=300&h=200&fit=crop" },
+        { name: "Pechuga", price: 12, image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&h=200&fit=crop" },
+        { name: "Papas Fritas", price: 5, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=300&h=200&fit=crop" },
+        { name: "Ensalada", price: 3, image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300&h=200&fit=crop" },
+        { name: "Gaseosa 500ml", price: 4, image: "https://images.unsplash.com/photo-1622483767028-3f66f3b9c8a1?w=300&h=200&fit=crop" },
+        { name: "Gaseosa 1L", price: 7, image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=300&h=200&fit=crop" },
+        { name: "Agua", price: 2, image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=300&h=200&fit=crop" }
+    ];
+
+    let menuItems = JSON.parse(localStorage.getItem('polloJuanitaMenu')) || defaultMenu;
+    let orderHistory = JSON.parse(localStorage.getItem('polloJuanitaHistory')) || [];
+    let orderCounter = parseInt(localStorage.getItem('polloJuanitaCounter')) || 1;
+    let currentOrder = [];
+
+    // --- FUNCIONES DE LOGIN ---
+
+    function attemptLogin() {
+        const user = document.getElementById('username').value.trim();
+        const pass = document.getElementById('password').value.trim();
+        const errorMsg = document.getElementById('login-error');
+
+        if (user === USER_CORRECTO && pass === PASS_CORRECTO) {
+            // Login Exitoso
+            document.getElementById('login-screen').style.display = 'none';
+            const appContent = document.getElementById('app-content');
+            appContent.classList.remove('hidden');
+            appContent.classList.add('visible');
+            
+            // Inicializar app
+            init();
+        } else {
+            // Login Fallido
+            errorMsg.style.display = 'block';
+            document.getElementById('password').value = '';
+            document.getElementById('password').focus();
+        }
+    }
+
+    function logout() {
+        if(confirm("¿Cerrar sesión y volver al inicio?")) {
+            location.reload(); // La forma más simple de volver al estado inicial
+        }
+    }
+
+    // --- FUNCIONES DE APP ---
+
+    function init() {
+        renderMenu();
+        updateOrderDisplay();
+        renderAdminList();
+        renderHistory();
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.panel').forEach(p => {
+            p.classList.remove('active');
+            p.style.display = 'none';
+        });
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+        if(tabName === 'pos') {
+            document.getElementById('pos-view').style.display = 'flex';
+            document.getElementById('pos-view').classList.add('active');
+            document.querySelectorAll('.tab')[0].classList.add('active');
+        } else if (tabName === 'admin') {
+            document.getElementById('admin-view').style.display = 'block';
+            document.getElementById('admin-view').classList.add('active');
+            document.querySelectorAll('.tab')[1].classList.add('active');
+        } else if (tabName === 'history') {
+            document.getElementById('history-view').style.display = 'block';
+            document.getElementById('history-view').classList.add('active');
+            document.querySelectorAll('.tab')[2].classList.add('active');
+        }
+    }
+
+    // --- LÓGICA DE CAJA ---
+
+    function renderMenu() {
+        const grid = document.getElementById('menuGrid');
+        grid.innerHTML = '';
+        menuItems.forEach((item, index) => {
+            const btn = document.createElement('div');
+            btn.className = 'product-btn';
+            btn.onclick = () => addToOrder(index);
+            const imgUrl = item.image && item.image.trim() !== "" ? item.image : "https://placehold.co/150x100?text=Sin+Imagen";
+
+            btn.innerHTML = `
+                <div class="product-img-container">
+                    <img src="${imgUrl}" class="product-img" alt="${item.name}" onerror="this.src='https://placehold.co/150x100?text=Error'">
+                </div>
+                <span class="p-name">${item.name}</span>
+                <span class="p-price">${item.price} Bs</span>
+            `;
+            grid.appendChild(btn);
+        });
+    }
+
+    function addToOrder(menuIndex) {
+        const item = menuItems[menuIndex];
+        const existingItem = currentOrder.find(i => i.name === item.name);
+        
+        if (existingItem) {
+            existingItem.qty++;
+            existingItem.total = existingItem.qty * item.price;
+        } else {
+            currentOrder.push({
+                name: item.name,
+                price: item.price,
+                qty: 1,
+                total: item.price
+            });
+        }
+        updateOrderDisplay();
+    }
+
+    function removeFromOrder(orderIndex) {
+        currentOrder.splice(orderIndex, 1);
+        updateOrderDisplay();
+    }
+
+    function updateOrderDisplay() {
+        const list = document.getElementById('orderList');
+        const totalDisplay = document.getElementById('totalDisplay');
+        const orderNumDisplay = document.getElementById('orderIdDisplay');
+
+        orderNumDisplay.textContent = orderCounter;
+        list.innerHTML = '';
+
+        let total = 0;
+
+        if (currentOrder.length === 0) {
+            list.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">El carrito está vacío</div>';
+        } else {
+            currentOrder.forEach((item, index) => {
+                total += item.total;
+                const div = document.createElement('div');
+                div.className = 'order-item';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <span><span class="item-qty">${item.qty}x</span> ${item.name}</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span class="item-total">${item.total} Bs</span>
+                        <button class="btn-remove" onclick="removeFromOrder(${index})">&times;</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        totalDisplay.textContent = total.toFixed(2) + ' Bs';
+    }
+
+    function clearOrder() {
+        const inputClave = prompt("Ingrese contraseña para CANCELAR el pedido:");
+        if (inputClave !== CLAVE_SEGURIDAD) {
+            alert("❌ Contraseña incorrecta.");
+            return;
+        }
+        if(confirm('¿Borrar pedido actual?')) {
+            currentOrder = [];
+            updateOrderDisplay();
+        }
+    }
+
+    function confirmOrder() {
+        if (currentOrder.length === 0) {
+            alert('El pedido está vacío.');
+            return;
+        }
+        const total = currentOrder.reduce((sum, item) => sum + item.total, 0);
+        const sale = {
+            id: orderCounter,
+            date: new Date().toLocaleString(),
+            items: [...currentOrder],
+            total: total
+        };
+        orderHistory.push(sale);
+        localStorage.setItem('polloJuanitaHistory', JSON.stringify(orderHistory));
+        orderCounter++;
+        localStorage.setItem('polloJuanitaCounter', orderCounter);
+        currentOrder = [];
+        updateOrderDisplay();
+        renderHistory();
+        alert(`✅ Pedido #${sale.id} cobrado! Total: ${total} Bs`);
+    }
+
+    // --- ADMIN ---
+
+    function renderAdminList() {
+        const list = document.getElementById('adminProductList');
+        list.innerHTML = '';
+        menuItems.forEach((item, index) => {
+            const li = document.createElement('li');
+            const imgUrl = item.image && item.image.trim() !== "" ? item.image : "https://placehold.co/50?text=?";
+            li.innerHTML = `
+                <div class="admin-item-preview">
+                    <img src="${imgUrl}" class="admin-thumb" onerror="this.src='https://placehold.co/50?text=Error'">
+                    <span><b>${item.name}</b> - ${item.price} Bs</span>
+                </div>
+                <div>
+                    <button class="btn btn-small btn-save" onclick="editProduct(${index})">Editar</button>
+                    <button class="btn btn-small btn-delete" onclick="deleteProduct(${index})">Borrar</button>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    function saveProduct() {
+        const name = document.getElementById('newProdName').value.trim();
+        const price = parseFloat(document.getElementById('newProdPrice').value);
+        const image = document.getElementById('newProdImage').value.trim();
+        const index = document.getElementById('editProdIndex').value;
+
+        if (!name || isNaN(price)) {
+            alert('Nombre y precio requeridos.');
+            return;
+        }
+
+        if (index === "") {
+            menuItems.push({ name, price, image });
+        } else {
+            menuItems[index] = { name, price, image };
+        }
+
+        localStorage.setItem('polloJuanitaMenu', JSON.stringify(menuItems));
+        renderMenu();
+        renderAdminList();
+        resetForm();
+    }
+
+    function editProduct(index) {
+        const item = menuItems[index];
+        document.getElementById('newProdName').value = item.name;
+        document.getElementById('newProdPrice').value = item.price;
+        document.getElementById('newProdImage').value = item.image || "";
+        document.getElementById('editProdIndex').value = index;
+    }
+
+    function deleteProduct(index) {
+        if(confirm('¿Borrar producto?')) {
+            menuItems.splice(index, 1);
+            localStorage.setItem('polloJuanitaMenu', JSON.stringify(menuItems));
+            renderMenu();
+            renderAdminList();
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('newProdName').value = '';
+        document.getElementById('newProdPrice').value = '';
+        document.getElementById('newProdImage').value = '';
+        document.getElementById('editProdIndex').value = '';
+    }
+
+    function resetDefaultMenu() {
+        if(confirm('¿Restaurar menú original?')) {
+            menuItems = [...defaultMenu];
+            localStorage.setItem('polloJuanitaMenu', JSON.stringify(menuItems));
+            renderMenu();
+            renderAdminList();
+        }
+    }
+
+    // --- HISTORIAL ---
+
+    function renderHistory() {
+        const tbody = document.getElementById('salesTableBody');
+        const totalSalesDisplay = document.getElementById('totalDaySales');
+        tbody.innerHTML = '';
+        let totalDay = 0;
+
+        [...orderHistory].reverse().forEach(sale => {
+            totalDay += sale.total;
+            const itemsDetail = sale.items.map(i => `${i.qty}x ${i.name}`).join(', ');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>#${sale.id}</td>
+                <td>${sale.date}</td>
+                <td>${itemsDetail}</td>
+                <td>${sale.total.toFixed(2)} Bs</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        totalSalesDisplay.textContent = totalDay.toFixed(2) + ' Bs';
+    }
+
+    function clearHistory() {
+        const inputClave = prompt("Ingrese contraseña para BORRAR el historial:");
+        if (inputClave !== CLAVE_SEGURIDAD) {
+            alert("❌ Contraseña incorrecta.");
+            return;
+        }
+        if(confirm('⚠️ ¿Borrar historial?')) {
+            orderHistory = [];
+            localStorage.setItem('polloJuanitaHistory', JSON.stringify(orderHistory));
+            renderHistory();
+        }
+    }
+
+</script>
+
+</body>
+</html>
